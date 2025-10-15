@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Collaborative Drawing — p5 + Firebase</title>
+
+  <!-- p5.js -->
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.9.4/lib/p5.min.js"></script>
+
+  <!-- Firebase compat (works in p5 Web Editor and plain HTML) -->
+  <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-database-compat.js"></script>
+
+  <style>
+    *{box-sizing:border-box}
+    :root { --muted:#6b7280; --text:#0b1220; --accent:#3b82f6; }
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:#f3f4f6;color:var(--text);height:100vh;overflow:hidden}
+    .app{display:grid;grid-template-columns:280px 1fr 280px;grid-template-rows:auto 1fr;grid-template-areas:"header header header" "sidebar canvas inspector";gap:10px;height:100vh;padding:10px}
+    header.appbar{grid-area:header;background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between}
+    .btnbar{display:flex;gap:10px}
+    .btn{border:1px solid #e5e7eb;background:#fff;border-radius:10px;padding:8px 10px;cursor:pointer;font-weight:600}
+    .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+    aside.sidebar,aside.inspector{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:12px;overflow:auto}
+    aside.sidebar{grid-area:sidebar}
+    aside.inspector{grid-area:inspector}
+
+    .canvas-wrap{
+      grid-area:canvas;
+      background:#fff;
+      border:1px solid #e5e7eb;
+      border-radius:12px;
+      display:grid;place-items:center;overflow:hidden;
+    }
+    /* black outline around the actual p5 canvas */
+    .canvas-wrap canvas{
+      background:#ffffff;
+      border:2px solid #000000;       /* ⬅️ black outline */
+      border-radius:6px;
+    }
+
+    .toolgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+    button.tool{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:8px;cursor:pointer;font-size:12px}
+    button.tool.active{outline:2px solid var(--accent);border-color:var(--accent)}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:center;margin:6px 0}
+    .row label{font-size:12px;color:#374151}
+    input[type=color],input[type=number],select{height:34px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;padding:0 8px}
+    .hint{font-size:12px;color:var(--muted)}
+    .kbd{font-family:ui-monospace,Menlo,Consolas,monospace;background:#f3f4f6;border:1px solid #e5e7eb;padding:1px 6px;border-radius:6px}
+    @media (max-width: 1000px){.app{grid-template-columns:1fr;grid-template-areas:"header" "canvas" "sidebar" "inspector"}}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="appbar">
+      <strong>Collaborative Drawing</strong>
+      <div class="btnbar">
+        <button id="saveBtn" class="btn">Save PNG</button>
+        <button id="resetBtn" class="btn">Reset</button>
+      </div>
+    </header>
+
+    <aside class="sidebar">
+      <h3 style="margin:.3rem 0;">Tools</h3>
+      <div id="toolGrid" class="toolgrid"></div>
+      <p class="hint" style="margin:.5rem 0 1rem">
+        Drag to preview; release to place. Triangle/Quad/Bezier = click to place vertices (3/4/4 clicks).
+        Curve = freehand with curveVertex (drag, release to commit).
+      </p>
+
+      <h3 style="margin:.3rem 0;">Style</h3>
+      <div class="row"><label>Fill</label><input type="color" id="fillColor" value="#3b82f6" /></div>
+      <div class="row"><label>Stroke</label><input type="color" id="strokeColor" value="#111827" /></div>
+      <div class="row"><label>Weight</label><input type="number" id="strokeWeight" min="0" max="20" value="2" /></div>
+      <div class="row"><label>Fill?</label><select id="fillToggle"><option value="on" selected>On</option><option value="off">Off</option></select></div>
+      <div class="row"><label>Stroke?</label><select id="strokeToggle"><option value="on" selected>On</option><option value="off">Off</option></select></div>
+
+      <h3 style="margin-top:1rem;">Arc</h3>
+      <div class="row"><label>Start°</label><input type="number" id="arcStart" value="0" /></div>
+      <div class="row"><label>Stop°</label><input type="number" id="arcStop" value="180" /></div>
+    </aside>
+
+    <div class="canvas-wrap">
+      <div id="canvas-container"></div>
+    </div>
+
+    <aside class="inspector">
+      <h3 style="margin:.3rem 0;">How it syncs</h3>
+      <p class="hint">Shared path: <span class="kbd">/canvas/actions</span> in Firebase Realtime Database.</p>
+    </aside>
+  </div>
+
+  <!-- Your app code -->
+  <script src="./collab_portrait_drawing.js"></script>
+</body>
+</html>
